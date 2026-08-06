@@ -34,7 +34,7 @@ export interface AppConfig {
 
 export const APP_CONFIG_DEFAULTS: AppConfig = {
   companyName: 'Murf AI',
-  pageTitle: 'Voice Agent Starter',
+  pageTitle: 'Aarogya AI — Your Voice Health Companion',
   pageDescription: 'A voice agent powered by Murf Falcon — the fastest TTS API',
 
   supportsChatInput: true,
@@ -43,10 +43,10 @@ export const APP_CONFIG_DEFAULTS: AppConfig = {
   isPreConnectBufferEnabled: true,
 
   logo: '/murf-logo.svg',
-  accent: '#6366F1',
+  accent: "#16A34A",
   logoDark: '/murf-logo-dark.svg',
-  accentDark: '#818cf8',
-  startButtonText: 'Start talking',
+  accentDark: "#22C55E",
+  startButtonText: 'Talk to Aarogya AI',
 
   // optional: audio visualization configuration
   // audioVisualizerType: 'bar',
