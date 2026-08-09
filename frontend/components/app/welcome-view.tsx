@@ -1,65 +1,158 @@
-import { Button } from '@/components/ui/button';
+'use client';
 
-function WelcomeImage() {
-  return (
-    <svg
-      width="64"
-      height="64"
-      viewBox="0 0 64 64"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className="text-fg0 mb-4 size-16"
-    >
-      <path
-        d="M15 24V40C15 40.7957 14.6839 41.5587 14.1213 42.1213C13.5587 42.6839 12.7956 43 12 43C11.2044 43 10.4413 42.6839 9.87868 42.1213C9.31607 41.5587 9 40.7957 9 40V24C9 23.2044 9.31607 22.4413 9.87868 21.8787C10.4413 21.3161 11.2044 21 12 21C12.7956 21 13.5587 21.3161 14.1213 21.8787C14.6839 22.4413 15 23.2044 15 24ZM22 5C21.2044 5 20.4413 5.31607 19.8787 5.87868C19.3161 6.44129 19 7.20435 19 8V56C19 56.7957 19.3161 57.5587 19.8787 58.1213C20.4413 58.6839 21.2044 59 22 59C22.7956 59 23.5587 58.6839 24.1213 58.1213C24.6839 57.5587 25 56.7957 25 56V8C25 7.20435 24.6839 6.44129 24.1213 5.87868C23.5587 5.31607 22.7956 5 22 5ZM32 13C31.2044 13 30.4413 13.3161 29.8787 13.8787C29.3161 14.4413 29 15.2044 29 16V48C29 48.7957 29.3161 49.5587 29.8787 50.1213C30.4413 50.6839 31.2044 51 32 51C32.7956 51 33.5587 50.6839 34.1213 50.1213C34.6839 49.5587 35 48.7957 35 48V16C35 15.2044 34.6839 14.4413 34.1213 13.8787C33.5587 13.3161 32.7956 13 32 13ZM42 21C41.2043 21 40.4413 21.3161 39.8787 21.8787C39.3161 22.4413 39 23.2044 39 24V40C39 40.7957 39.3161 41.5587 39.8787 42.1213C40.4413 42.6839 41.2043 43 42 43C42.7957 43 43.5587 42.6839 44.1213 42.1213C44.6839 41.5587 45 40.7957 45 40V24C45 23.2044 44.6839 22.4413 44.1213 21.8787C43.5587 21.3161 42.7957 21 42 21ZM52 17C51.2043 17 50.4413 17.3161 49.8787 17.8787C49.3161 18.4413 49 19.2044 49 20V44C49 44.7957 49.3161 45.5587 49.8787 46.1213C50.4413 46.6839 51.2043 47 52 47C52.7957 47 53.5587 46.6839 54.1213 46.1213C54.6839 45.5587 55 44.7957 55 44V20C55 19.2044 54.6839 18.4413 54.1213 17.8787C53.5587 17.3161 52.7957 17 52 17Z"
-        fill="currentColor"
-      />
-    </svg>
-  );
-}
+import type { ReactNode } from 'react';
+import Image from 'next/image';
+import {
+  Activity,
+  ArrowRight,
+  HeartHandshake,
+  Languages,
+  ShieldCheck,
+  Stethoscope,
+} from 'lucide-react';
 
 interface WelcomeViewProps {
   startButtonText: string;
-  onStartCall: () => void;
+  onStartCall: () => void | Promise<void>;
+  errorMessage?: string | null;
+  ended?: boolean;
+  isStarting?: boolean;
 }
 
-export const WelcomeView = ({
+export function WelcomeView({
   startButtonText,
   onStartCall,
-  ref,
-}: React.ComponentProps<'div'> & WelcomeViewProps) => {
+  errorMessage,
+  ended = false,
+  isStarting = false,
+}: WelcomeViewProps) {
+  const title = ended ? 'Your consultation has ended.' : 'Health support,';
+  const highlightedTitle = ended
+    ? 'We are here whenever you need us.'
+    : 'just a conversation away.';
+
   return (
-    <div ref={ref}>
-      <section className="bg-background flex flex-col items-center justify-center text-center">
-        <WelcomeImage />
-
-        <p className="text-foreground max-w-prose pt-1 leading-6 font-medium">
-          Chat live with your voice AI agent
+    <main className="min-h-svh overflow-hidden bg-[#f2fbf6] text-[#17382b]">
+      <header className="mx-auto flex w-full max-w-7xl items-center justify-between px-5 py-5 sm:px-8 lg:px-10">
+        <Image
+          src="/image.png"
+          alt="ASHA Sathi"
+          width={153}
+          height={50}
+          priority
+          className="h-auto w-[142px] sm:w-[153px]"
+        />
+        <p className="hidden font-mono text-[10px] font-bold tracking-[0.12em] text-[#1d392e] uppercase sm:block">
+          Voice health support
         </p>
+        <p className="font-mono text-[9px] font-bold tracking-[0.1em] text-[#1d392e] uppercase sm:text-[10px]">
+          Murf Falcon
+        </p>
+      </header>
 
-        <Button
-          size="lg"
-          onClick={onStartCall}
-          className="mt-6 w-64 rounded-full font-mono text-xs font-bold tracking-wider uppercase"
-        >
-          {startButtonText}
-        </Button>
-      </section>
+      <section className="relative mx-auto grid w-full max-w-7xl items-center gap-10 px-5 pt-6 pb-12 sm:px-8 lg:grid-cols-[1.06fr_0.94fr] lg:px-10 lg:pt-14 lg:pb-20">
+        <div className="pointer-events-none absolute top-1/2 -left-36 size-80 -translate-y-1/2 rounded-full bg-[#d9f4e5] blur-3xl" />
 
-      <div className="fixed bottom-5 left-0 flex w-full items-center justify-center">
-        <p className="text-muted-foreground max-w-prose pt-1 text-xs leading-5 font-normal text-pretty md:text-sm">
-          Need help getting set up? Check out the{' '}
-          <a
-            target="_blank"
-            rel="noopener noreferrer"
-            href="https://docs.livekit.io/agents/start/voice-ai/"
-            className="underline"
+        <div className="relative">
+          <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-[#d6ecdf] bg-white/80 px-4 py-2 text-xs font-semibold text-[#187451] shadow-sm">
+            <Activity size={16} aria-hidden="true" />
+            Built for ASHA workers &amp; frontline health teams
+          </div>
+
+          <h1 className="max-w-xl text-4xl font-extrabold tracking-[-0.055em] text-[#163629] sm:text-5xl lg:text-6xl lg:leading-[1.07]">
+            {title} <span className="text-[#168457]">{highlightedTitle}</span>
+          </h1>
+
+          <p className="mt-6 max-w-xl text-base leading-7 text-[#62786d] sm:text-lg sm:leading-8">
+            ASHA Sathi is a multilingual voice assistant for basic symptom screening, maternal and
+            child-health awareness, preventive guidance, and referral support.
+          </p>
+
+          <div className="mt-8 grid max-w-2xl gap-3 sm:grid-cols-2">
+            <Feature
+              icon={<Stethoscope size={21} />}
+              title="Symptom screening"
+              text="Ask relevant follow-up questions."
+            />
+            <Feature
+              icon={<HeartHandshake size={21} />}
+              title="Maternal & child health"
+              text="Support preventive health awareness."
+            />
+            <Feature
+              icon={<ShieldCheck size={21} />}
+              title="Referral guidance"
+              text="Recognise warning signs early."
+            />
+            <Feature
+              icon={<Languages size={21} />}
+              title="Multilingual"
+              text="Hindi, English & Hinglish."
+            />
+          </div>
+        </div>
+
+        <div className="relative mx-auto w-full max-w-xl rounded-[30px] border border-[#dceee4] bg-white/95 p-5 shadow-[0_24px_70px_rgba(19,94,63,0.13)] backdrop-blur sm:p-7">
+          <div className="flex items-center gap-3">
+            <div className="flex size-12 items-center justify-center rounded-2xl bg-[#e8f8ef] text-[#158052]">
+              <HeartHandshake size={25} aria-hidden="true" />
+            </div>
+            <div>
+              <h2 className="font-bold text-[#19392c]">
+                {ended ? 'Start another consultation' : 'Start a health consultation'}
+              </h2>
+              <p className="mt-0.5 text-sm text-[#71877d]">Voice-first · Simple · Multilingual</p>
+            </div>
+          </div>
+
+          {errorMessage ? (
+            <div
+              role="alert"
+              className="mt-6 rounded-2xl border border-[#f4c8bf] bg-[#fff6f3] p-4 text-sm leading-6 text-[#8f3225]"
+            >
+              <p className="font-bold">Microphone access is needed</p>
+              <p className="mt-1">{errorMessage}</p>
+            </div>
+          ) : (
+            <div className="mt-6 rounded-2xl bg-[#effaf4] p-5 text-sm leading-6 text-[#557166]">
+              <p className="font-bold text-[#2c5845]">
+                Namaste! <span aria-hidden="true">🙏</span>
+              </p>
+              <p className="mt-2">
+                बोलकर अपने patient की health concern बताइए। मैं एक समय में एक सवाल पूछकर आपकी सहायता
+                करूँगी।
+              </p>
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={onStartCall}
+            disabled={isStarting}
+            className="mt-6 flex min-h-16 w-full items-center justify-center gap-3 rounded-full bg-[#0f7a4f] px-6 text-base font-bold text-white shadow-[0_10px_18px_rgba(15,122,79,0.23)] transition hover:bg-[#09613e] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#0f7a4f] disabled:cursor-wait disabled:opacity-75"
           >
-            Voice AI quickstart
-          </a>
-          .
-        </p>
+            {isStarting ? 'Connecting…' : startButtonText}
+            {!isStarting && <ArrowRight size={20} aria-hidden="true" />}
+          </button>
+
+          <p className="mt-5 flex items-center justify-center gap-2 text-center text-xs leading-5 text-[#7a9086]">
+            <ShieldCheck size={15} aria-hidden="true" />
+            General health support · Not a replacement for a doctor
+          </p>
+        </div>
+      </section>
+    </main>
+  );
+}
+
+function Feature({ icon, title, text }: { icon: ReactNode; title: string; text: string }) {
+  return (
+    <div className="rounded-2xl border border-[#dfefe6] bg-white/75 p-4 shadow-sm">
+      <div className="mb-3 flex size-9 items-center justify-center rounded-xl bg-[#eaf8f0] text-[#168457]">
+        {icon}
       </div>
+      <h2 className="font-bold text-[#294438]">{title}</h2>
+      <p className="mt-1 text-sm leading-5 text-[#758b80]">{text}</p>
     </div>
   );
-};
+}

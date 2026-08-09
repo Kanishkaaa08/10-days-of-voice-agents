@@ -43,7 +43,7 @@ export async function POST(req: Request) {
         { ignoreUnknownFields: true }
       );
     }
-      
+
     // Generate participant token
     const participantName = 'user';
     const participantIdentity = `voice_assistant_user_${Math.floor(Math.random() * 10_000)}`;
@@ -67,10 +67,9 @@ export async function POST(req: Request) {
     });
     return NextResponse.json(data, { headers });
   } catch (error) {
-    if (error instanceof Error) {
-      console.error(error);
-      return new NextResponse(error.message, { status: 500 });
-    }
+    console.error(error);
+    const message = error instanceof Error ? error.message : 'Internal server error';
+    return new NextResponse(message, { status: 500 });
   }
 }
 

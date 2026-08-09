@@ -122,3 +122,71 @@
     @apply bg-background text-foreground;
   }
 }
+
+@keyframes asha-wave {
+  0%,
+  100% {
+    height: 10px;
+    opacity: 0.55;
+  }
+  50% {
+    height: 38px;
+    opacity: 1;
+  }
+}
+
+@keyframes asha-orbit {
+  0% {
+    transform: scale(0.78);
+    opacity: 0.65;
+  }
+  75%,
+  100% {
+    transform: scale(1.12);
+    opacity: 0;
+  }
+}
+
+.asha-voice-orb {
+  isolation: isolate;
+}
+
+.asha-orb-ring {
+  position: absolute;
+  inset: 16%;
+  z-index: -1;
+  border: 1px solid rgb(22 132 87 / 24%);
+  border-radius: 9999px;
+  opacity: 0;
+}
+
+.asha-orb-ring-two {
+  animation-delay: 0.9s;
+}
+
+.asha-wave-bar {
+  height: 10px;
+  animation: asha-wave 900ms ease-in-out infinite;
+  animation-play-state: paused;
+}
+
+[data-agent-state='listening'] .asha-wave-bar,
+[data-agent-state='speaking'] .asha-wave-bar {
+  animation-play-state: running;
+}
+
+[data-agent-state='speaking'] .asha-orb-ring,
+[data-agent-state='listening'] .asha-orb-ring {
+  animation: asha-orbit 1.8s ease-out infinite;
+}
+
+[data-agent-state='speaking'] .asha-voice-orb {
+  filter: drop-shadow(0 0 22px rgb(22 132 87 / 16%));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .asha-orb-ring,
+  .asha-wave-bar {
+    animation: none !important;
+  }
+}

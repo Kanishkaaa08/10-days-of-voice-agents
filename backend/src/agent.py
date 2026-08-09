@@ -9,11 +9,10 @@ from livekit.agents import (
     JobContext,
     JobProcess,
     cli,
-    inference,
-    tokenize,
     room_io,
+    tokenize,
 )
-from livekit.plugins import murf, silero, google, deepgram, noise_cancellation
+from livekit.plugins import deepgram, google, murf, noise_cancellation, silero
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
 
 logger = logging.getLogger("agent")

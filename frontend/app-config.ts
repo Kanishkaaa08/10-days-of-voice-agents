@@ -33,20 +33,20 @@ export interface AppConfig {
 }
 
 export const APP_CONFIG_DEFAULTS: AppConfig = {
-  companyName: 'Murf AI',
-  pageTitle: 'ASHA Sathi',
-  pageDescription: 'A voice agent powered by Murf Falcon — the fastest TTS API',
+  companyName: 'ASHA Sathi',
+  pageTitle: 'ASHA Sathi | Voice Health Support',
+  pageDescription: 'Multilingual voice health support for ASHA workers, powered by Murf Falcon.',
 
-  supportsChatInput: true,
-  supportsVideoInput: true,
-  supportsScreenShare: true,
+  supportsChatInput: false,
+  supportsVideoInput: false,
+  supportsScreenShare: false,
   isPreConnectBufferEnabled: true,
 
-  logo: '/murf-logo.svg',
-  accent: "#16A34A",
-  logoDark: '/murf-logo-dark.svg',
-  accentDark: "#22C55E",
-  startButtonText: 'Talk to ASHA Sathi',
+  logo: '/image.png',
+  accent: '#0f7a4f',
+  logoDark: '/image.png',
+  accentDark: '#0f7a4f',
+  startButtonText: 'Start health consultation',
 
   // optional: audio visualization configuration
   // audioVisualizerType: 'bar',

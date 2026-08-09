@@ -41,10 +41,11 @@ export function App({ appConfig }: AppProps) {
   return (
     <AgentSessionProvider session={session}>
       <AppSetup />
-      <main className="grid h-svh grid-cols-1 place-content-center">
-        <ViewController appConfig={appConfig} />
-      </main>
-      <StartAudioButton label="Start Audio" />
+      <ViewController appConfig={appConfig} />
+      <StartAudioButton
+        label="Tap to enable ASHA Sathi's voice"
+        className="fixed bottom-5 left-1/2 z-50 -translate-x-1/2 rounded-full bg-[#0f7a4f] px-5 text-sm font-semibold text-white shadow-lg hover:bg-[#09613e]"
+      />
       <Toaster
         icons={{
           warning: <WarningIcon weight="bold" />,
