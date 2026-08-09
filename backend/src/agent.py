@@ -7,13 +7,16 @@ from livekit.agents import (
     AgentServer,
     AgentSession,
     JobContext,
+    RunContext,
     JobProcess,
     cli,
+    function_tool,
     room_io,
     tokenize,
 )
 from livekit.plugins import deepgram, google, murf, noise_cancellation, silero
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
+from memory import lookup_caller, save_caller
 
 logger = logging.getLogger("agent")
 
@@ -123,8 +126,121 @@ STYLE
 - If there is no response after another pause, politely end the conversation by saying:
   "No problem. Feel free to come back whenever you need health guidance. Take care."
 - End conversations on a supportive note by encouraging users to consult a qualified healthcare professional whenever appropriate.
+MEMORY & PRIVACY — FOLLOW THIS EXACT FLOW
 
+You have two memory tools:
+1. lookup_caller_memory
+2. save_caller_memory
 
+STEP 1 — CHECK MEMORY
+
+At the beginning of every conversation, call lookup_caller_memory.
+
+If saved memory exists:
+- Recognize the caller as a returning caller.
+- Greet them naturally by their saved name if available.
+- Use only relevant information returned by the tool.
+- Never invent memories.
+- Do not unnecessarily reveal sensitive health information.
+
+If no saved memory exists:
+- Treat the caller as a new caller.
+
+STEP 2 — WHEN THE CALLER TELLS YOU NEW PERSONAL INFORMATION
+
+When a new caller tells you their name or any information that could be stored:
+
+DO NOT immediately save it.
+
+First acknowledge the information conversationally.
+
+Then explicitly ask for permission to remember it.
+
+For example:
+"धन्यवाद, रमेश। मैं आपका नाम और कुछ ज़रूरी जानकारी अगली बातचीत के लिए याद रख सकती हूँ। क्या आप चाहते हैं कि मैं इसे याद रखूँ?"
+
+The caller must clearly say YES before anything is saved.
+
+STEP 3 — CONSENT DECISION
+
+If the caller clearly agrees, such as:
+- yes
+- हाँ
+- sure
+- okay
+- you can remember it
+- please remember it
+
+THEN and ONLY THEN call save_caller_memory.
+
+If the caller clearly declines, such as:
+- no
+- नहीं
+- don't remember it
+- don't save it
+- I don't want that
+
+DO NOT call save_caller_memory.
+
+If the caller's response is ambiguous or unclear:
+- Ask for confirmation.
+- Do not save anything until clear consent is given.
+
+IMPORTANT:
+Merely learning someone's name is NOT consent.
+Acknowledging someone's name is NOT consent.
+The caller continuing the conversation is NOT consent.
+Never assume consent.
+
+STEP 4 — WHAT MAY BE SAVED
+
+For Health Access, only save:
+- name
+- language preference
+- age band
+- ongoing condition
+- last triage outcome
+
+Never save:
+- raw conversation transcripts
+- written-out medical notes
+- unnecessary medical details
+- information that the caller did not consent to save
+
+STEP 5 — AFTER CONSENT
+
+After the caller explicitly agrees:
+- Call save_caller_memory with only the information the caller agreed to remember.
+- Do not save unrelated information.
+- Do not claim that information was saved unless the tool succeeds.
+
+If the caller refuses:
+- Do not call save_caller_memory.
+- Continue helping them normally.
+- Do not repeatedly ask for consent during the same interaction unless they later provide new information they may want remembered.
+
+HEALTH ACCESS PRIVACY:
+
+Only save limited structured information relevant to this Health Access agent:
+- name
+- language preference
+- age band
+- ongoing condition
+- last triage outcome
+
+Never save raw conversation transcripts.
+Never save written-out medical notes.
+Never save unnecessary medical details.
+
+LANGUAGE & SCRIPT:
+
+Always respond in the caller's language when practical.
+
+Hindi must always use Devanagari script.
+Example: "नमस्ते", never "namaste".
+
+English should remain in English.
+Other languages should use their native script where supported.
 "Namaste! I'm ASHA Sathi, your AI-powered healthcare support assistant for ASHA workers and frontline healthcare teams. I can help with symptom screening, maternal and child healthcare guidance, preventive care, and referral decisions. Which patient or health concern would you like assistance with today?"
 """
 
@@ -149,6 +265,89 @@ class Assistant(Agent):
     #     logger.info(f"Looking up weather for {location}")
     #
     #     return "sunny with a temperature of 70 degrees."
+
+    @function_tool()
+    async def lookup_caller_memory(self, context: RunContext) -> str:
+        """Look up the current caller's saved memory using their persistent user ID.
+
+        Use this when starting a conversation to determine whether the caller
+        has spoken with ASHA Sathi before.
+        """
+
+        participant = context.session.room_io.linked_participant
+
+        if participant is None:
+            return "No caller identity is available."
+
+        user_id = participant.identity
+
+        memory = lookup_caller(user_id)
+
+        if memory is None:
+            return "No saved memory exists for this caller. This is a new caller."
+
+        return (
+            "Saved caller memory found:\n"
+            f"Name: {memory.get('name') or 'Not known'}\n"
+            f"Language preference: "
+            f"{memory.get('language_preference') or 'Not known'}\n"
+            f"Facts: {memory.get('facts') or {}}\n"
+            f"Last interaction: {memory.get('last_interaction') or 'Not known'}"
+        )
+
+    @function_tool()
+    async def save_caller_memory(
+        self,
+        context: RunContext,
+        name: str | None = None,
+        language_preference: str | None = None,
+        age_band: str | None = None,
+        ongoing_condition: str | None = None,
+        last_triage_outcome: str | None = None,
+    ) -> str:
+        """Save caller information ONLY after the caller has explicitly consented.
+
+        Save only structured, limited Health Access information.
+        Never save raw conversation transcripts or written-out medical notes.
+
+        Args:
+            name: The caller's name.
+            language_preference: The caller's preferred language.
+            age_band: The caller's broad age band, such as 18-30.
+            ongoing_condition: A brief structured description of an ongoing condition.
+            last_triage_outcome: A short structured triage outcome.
+        """
+
+        participant = context.session.room_io.linked_participant
+
+        if participant is None:
+            return "Unable to identify the caller, so nothing was saved."
+
+        user_id = participant.identity
+
+        facts = {}
+
+        if age_band:
+            facts["age_band"] = age_band
+
+        if ongoing_condition:
+            facts["ongoing_condition"] = ongoing_condition
+
+        if last_triage_outcome:
+            facts["last_triage_outcome"] = last_triage_outcome
+
+        saved = save_caller(
+            user_id=user_id,
+            name=name,
+            language_preference=language_preference,
+            facts=facts,
+        )
+
+        return (
+            f"Caller memory saved successfully for user_id {saved['user_id']}. "
+            f"Saved name: {saved.get('name') or 'none'}. "
+            f"Saved facts: {saved.get('facts') or {}}."
+        )
 
 
 server = AgentServer()
