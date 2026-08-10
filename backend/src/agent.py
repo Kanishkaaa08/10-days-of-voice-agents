@@ -1,5 +1,6 @@
 import logging
-
+import httpx
+from datetime import datetime, timezone
 from dotenv import load_dotenv
 from livekit import rtc
 from livekit.agents import (
@@ -126,6 +127,57 @@ STYLE
 - If there is no response after another pause, politely end the conversation by saying:
   "No problem. Feel free to come back whenever you need health guidance. Take care."
 - End conversations on a supportive note by encouraging users to consult a qualified healthcare professional whenever appropriate.
+
+
+MEMORY CONSENT — CRITICAL HEALTH ACCESS RULE
+
+Never save any caller information without explicit permission.
+
+This includes:
+- Name
+- Age or age band
+- Language preference
+- Ongoing health conditions
+- Symptoms
+- Previous health information
+- Triage outcomes
+- Any other personal or health-related fact
+
+Whenever the caller provides new information that could be stored:
+
+1. Do NOT call save_caller_memory yet.
+2. First tell the caller what information you would like to remember.
+3. Ask for explicit permission.
+4. Only after the caller clearly says YES, call save_caller_memory.
+5. If the caller says NO, do not save anything.
+6. Never interpret silence, hesitation, "okay", "hmm", or unrelated answers as permission.
+7. If permission is unclear, ask again.
+
+Example:
+
+Caller:
+"My name is Ramesh and I have diabetes."
+
+Assistant:
+"Thank you, Ramesh ji. Would you like me to remember your name and that you have diabetes for future conversations?"
+
+Caller:
+"Yes."
+
+Assistant:
+"Thank you. I'll remember that for our future conversations."
+
+→ NOW call save_caller_memory.
+
+If caller says:
+"No, don't remember it."
+
+→ DO NOT call save_caller_memory.
+
+IMPORTANT:
+Do not save information first and ask for permission afterward.
+Permission must ALWAYS come before the save function call.
+
 MEMORY & PRIVACY — FOLLOW THIS EXACT FLOW
 
 You have two memory tools:
@@ -218,6 +270,54 @@ If the caller refuses:
 - Do not call save_caller_memory.
 - Continue helping them normally.
 - Do not repeatedly ask for consent during the same interaction unless they later provide new information they may want remembered.
+MEMORY CONSENT — CRITICAL HEALTH ACCESS RULE
+
+Never save any caller information without explicit permission.
+
+This includes:
+- Name
+- Age or age band
+- Language preference
+- Ongoing health conditions
+- Symptoms
+- Previous health information
+- Triage outcomes
+- Any other personal or health-related fact
+
+Whenever the caller provides new information that could be stored:
+
+1. Do NOT call save_caller_memory yet.
+2. First tell the caller what information you would like to remember.
+3. Ask for explicit permission.
+4. Only after the caller clearly says YES, call save_caller_memory.
+5. If the caller says NO, do not save anything.
+6. Never interpret silence, hesitation, "okay", "hmm", or unrelated answers as permission.
+7. If permission is unclear, ask again.
+
+Example:
+
+Caller:
+"My name is Ramesh and I have diabetes."
+
+Assistant:
+"Thank you, Ramesh ji. Would you like me to remember your name and that you have diabetes for future conversations?"
+
+Caller:
+"Yes."
+
+Assistant:
+"Thank you. I'll remember that for our future conversations."
+
+→ NOW call save_caller_memory.
+
+If caller says:
+"No, don't remember it."
+
+→ DO NOT call save_caller_memory.
+
+IMPORTANT:
+Do not save information first and ask for permission afterward.
+Permission must ALWAYS come before the save function call.
 
 HEALTH ACCESS PRIVACY:
 
@@ -234,14 +334,114 @@ Never save unnecessary medical details.
 
 LANGUAGE & SCRIPT:
 
-Always respond in the caller's language when practical.
+LANGUAGE BEHAVIOR
 
-Hindi must always use Devanagari script.
-Example: "नमस्ते", never "namaste".
+Always reply in the same language style the user is currently speaking.
 
-English should remain in English.
-Other languages should use their native script where supported.
-"Namaste! I'm ASHA Sathi, your AI-powered healthcare support assistant for ASHA workers and frontline healthcare teams. I can help with symptom screening, maternal and child healthcare guidance, preventive care, and referral decisions. Which patient or health concern would you like assistance with today?"
+Rules:
+
+1. If the user speaks English, respond in English.
+   Example:
+   User: "Hello"
+   Assistant: "Hello! How can I help you today?"
+
+2. If the user speaks Hindi, respond in Hindi using Devanagari script.
+   Example:
+   User: "नमस्ते"
+   Assistant: "नमस्ते! मैं आपकी कैसे सहायता कर सकती हूँ?"
+
+3. If the user speaks Hinglish, respond in natural Hinglish.
+   Example:
+   User: "Mujhe diabetes ke baare mein jaana hai."
+   Assistant: "Bilkul, main aapko diabetes ke baare mein samjha sakti hoon."
+
+4. Do not automatically translate English into Hindi.
+
+5. Do not automatically translate Hindi into English.
+
+6. Detect the user's current language from their latest message and mirror it.
+
+7. If the user switches languages during the conversation, switch your response language too.
+
+8. Do not force Hindi just because the user's previous conversations were in Hindi.
+
+9. Keep the response natural and conversational rather than explicitly announcing the detected language.
+
+ASSISTANT IDENTITY AND GENDER
+
+You are ASHA Sathi, a female voice assistant.
+
+Always refer to yourself using feminine Hindi grammar.
+
+Use:
+- "मैं कर सकती हूँ"
+- "मैं समझ सकती हूँ"
+- "मैं आपकी मदद कर सकती हूँ"
+- "मैं बता सकती हूँ"
+
+Never use masculine forms such as:
+- "मैं कर सकता हूँ"
+- "मैं समझ सकता हूँ"
+- "मैं बता सकता हूँ"
+
+GREETING
+
+Match the user's language from their first meaningful utterance.
+
+English:
+User: "Hello"
+Assistant: "Hello! How can I help you today?"
+
+Hindi:
+User: "नमस्ते"
+Assistant: "नमस्ते! मैं आपकी कैसे सहायता कर सकती हूँ?"
+
+Hinglish:
+User: "Hello, mujhe health ke baare mein poochna hai."
+Assistant: "Hello! Bilkul, aap bataiye, main aapki kaise help kar sakti hoon?"
+
+DAY 5 — HEALTH FACILITY LOOKUP TOOL
+
+You have access to a tool called get_nearby_health_facilities.
+
+Use this tool whenever the caller asks about:
+- nearby PHCs
+- nearby hospitals
+- nearby clinics
+- health centres
+- healthcare facilities
+- where they can seek healthcare in a particular location
+
+Do not answer with an invented facility name.
+
+If the caller has not provided a location:
+- Ask for their village, town, district, or area.
+- Do not guess their location.
+
+When the tool returns information:
+- Explain the result naturally in the user's language.
+- Do not read the JSON or raw tool output aloud.
+- Mention that the information comes from live OpenStreetMap data when useful.
+- Mention the retrieval time/date when relevant.
+- Do not claim that a facility is open, available, or offering a particular service unless the tool data confirms it.
+
+If the tool fails:
+- Tell the caller that the live health facility information is temporarily unavailable.
+- Do not invent or guess a facility.
+- Offer to help with general health guidance instead.
+
+Example:
+
+User:
+"Is there a PHC near Tonk?"
+
+Assistant:
+"Let me check the available health facility information for Tonk."
+
+→ Call get_nearby_health_facilities.
+
+After the tool returns:
+Explain the relevant facilities naturally instead of reading the raw tool response.
 """
 
 
@@ -279,6 +479,7 @@ class Assistant(Agent):
         if participant is None:
             return "No caller identity is available."
 
+        logger.info("🔥 TOOL CALLED: lookup_caller_memory")
         user_id = participant.identity
 
         memory = lookup_caller(user_id)
@@ -323,6 +524,7 @@ class Assistant(Agent):
         if participant is None:
             return "Unable to identify the caller, so nothing was saved."
 
+        logger.info("🔥 TOOL CALLED: save_caller_memory")
         user_id = participant.identity
 
         facts = {}
@@ -348,8 +550,420 @@ class Assistant(Agent):
             f"Saved name: {saved.get('name') or 'none'}. "
             f"Saved facts: {saved.get('facts') or {}}."
         )
+        
+    @function_tool()
+    async def get_nearby_health_facilities(
+        self,
+        context: RunContext,
+        location: str,
+    ) -> str:
+        """Find nearby healthcare facilities using live OpenStreetMap data.
 
+        Use this tool whenever the caller asks about nearby:
+        - hospitals
+        - PHCs / Primary Health Centres
+        - clinics
+        - health centres
+        - doctors
+        - healthcare facilities
 
+        If the caller gives a new location, always search using that
+        new location. Never reuse results from another location.
+
+        Do not invent facility names or locations.
+
+        Args:
+            location: User's location, e.g. "Tonk", "Jaipur".
+        """
+
+        logger.info(
+            f"🔥 TOOL CALLED: get_nearby_health_facilities | "
+            f"location={location}"
+        )
+
+        # ---------------------------------------------------------
+        # 1. NORMALIZE LOCATION
+        # ---------------------------------------------------------
+
+        location_clean = location.strip()
+        location_key = location_clean.lower()
+
+        # Known locations
+        HEALTH_LOCATION_COORDS = {
+            "tonk": (26.1667, 75.7885),
+            "tonk, rajasthan": (26.1667, 75.7885),
+
+            "jaipur": (26.9124, 75.7873),
+            "jaipur, rajasthan": (26.9124, 75.7873),
+        }
+
+        coords = HEALTH_LOCATION_COORDS.get(location_key)
+
+        # Also handle common variants
+        if coords is None:
+            if "tonk" in location_key:
+                coords = (26.1667, 75.7885)
+
+            elif "jaipur" in location_key:
+                coords = (26.9124, 75.7873)
+
+        if coords:
+            lat, lon = coords
+
+            logger.info(
+                f"📍 Using coordinates for {location_clean}: "
+                f"lat={lat}, lon={lon}"
+            )
+
+        # ---------------------------------------------------------
+        # 2. TRY LIGHTWEIGHT OVERPASS QUERY
+        # ---------------------------------------------------------
+
+        if coords:
+
+            # IMPORTANT:
+            # Smaller radius + nodes only = much lighter query.
+            query = f"""
+            [out:json][timeout:10];
+
+            (
+            node["amenity"="hospital"](around:5000,{lat},{lon});
+            node["amenity"="clinic"](around:5000,{lat},{lon});
+            node["amenity"="doctors"](around:5000,{lat},{lon});
+            node["healthcare"="centre"](around:5000,{lat},{lon});
+            node["healthcare"="clinic"](around:5000,{lat},{lon});
+            node["healthcare"="hospital"](around:5000,{lat},{lon});
+            );
+
+            out tags;
+            """
+
+            overpass_urls = [
+                "https://overpass-api.de/api/interpreter",
+                "https://overpass.kumi.systems/api/interpreter",
+                "https://overpass.private.coffee/api/interpreter",
+            ]
+
+            headers = {
+                "User-Agent": (
+                    "ASHA-Sathi-Voice-Agent/1.0 "
+                    "(healthcare-facility-search)"
+                ),
+                "Accept": "application/json",
+            }
+
+            # -----------------------------------------------------
+            # Try Overpass servers one by one
+            # -----------------------------------------------------
+
+            try:
+                async with httpx.AsyncClient(
+                    timeout=httpx.Timeout(
+                        connect=5.0,
+                        read=12.0,
+                        write=5.0,
+                        pool=5.0,
+                    )
+                ) as client:
+
+                    for url in overpass_urls:
+
+                        try:
+                            logger.info(
+                                f"🌐 Trying Overpass server: {url}"
+                            )
+
+                            response = await client.post(
+                                url,
+                                data={"data": query},
+                                headers=headers,
+                            )
+
+                            logger.info(
+                                f"📡 Overpass response: "
+                                f"{response.status_code} from {url}"
+                            )
+
+                            if response.status_code != 200:
+                                logger.warning(
+                                    f"⚠️ Overpass server failed: "
+                                    f"{url} | "
+                                    f"status={response.status_code}"
+                                )
+                                continue
+
+                            data = response.json()
+
+                            elements = data.get("elements", [])
+
+                            logger.info(
+                                f"📊 Overpass returned "
+                                f"{len(elements)} elements"
+                            )
+
+                            facilities = []
+
+                            seen_names = set()
+
+                            for element in elements:
+
+                                tags = element.get("tags", {})
+
+                                name = tags.get("name")
+
+                                if not name:
+                                    continue
+
+                                # Avoid duplicate facilities
+                                name_key = name.strip().lower()
+
+                                if name_key in seen_names:
+                                    continue
+
+                                seen_names.add(name_key)
+
+                                facility_type = (
+                                    tags.get("healthcare")
+                                    or tags.get("amenity")
+                                    or "health facility"
+                                )
+
+                                facilities.append(
+                                    {
+                                        "name": name.strip(),
+                                        "type": facility_type,
+                                    }
+                                )
+
+                                if len(facilities) >= 5:
+                                    break
+
+                            if facilities:
+
+                                retrieved_at = datetime.now(
+                                    timezone.utc
+                                ).strftime(
+                                    "%Y-%m-%d %H:%M UTC"
+                                )
+
+                                logger.info(
+                                    f"✅ Found "
+                                    f"{len(facilities)} facilities "
+                                    f"for {location_clean}"
+                                )
+
+                                result = (
+                                    f"Live healthcare facility data "
+                                    f"retrieved from OpenStreetMap "
+                                    f"via Overpass API at "
+                                    f"{retrieved_at}.\n"
+                                    f"Location: {location_clean}\n"
+                                    f"Facilities:\n"
+                                )
+
+                                for facility in facilities:
+                                    result += (
+                                        f"- {facility['name']} "
+                                        f"({facility['type']})\n"
+                                    )
+
+                                return result
+
+                            logger.info(
+                                f"⚠️ Overpass returned no named "
+                                f"facilities for {location_clean}"
+                            )
+
+                        except httpx.TimeoutException:
+                            logger.warning(
+                                f"⚠️ Overpass timeout: {url}"
+                            )
+                            continue
+
+                        except httpx.RequestError as e:
+                            logger.warning(
+                                f"⚠️ Overpass connection problem: "
+                                f"{url} | {e}"
+                            )
+                            continue
+
+                        except Exception as e:
+                            logger.warning(
+                                f"⚠️ Unexpected Overpass error: "
+                                f"{url} | {e}"
+                            )
+                            continue
+
+            except Exception as e:
+                logger.warning(
+                    f"⚠️ Overpass client setup failed: {e}"
+                )
+
+        # ---------------------------------------------------------
+        # 3. NOMINATIM FALLBACK
+        # ---------------------------------------------------------
+        #
+        # This is used only when Overpass is unavailable.
+        #
+        # Nominatim is also based on OpenStreetMap data and can
+        # return named healthcare places.
+        # ---------------------------------------------------------
+
+        logger.info(
+            f"🔄 Trying Nominatim fallback for {location_clean}"
+        )
+
+        nominatim_url = (
+            "https://nominatim.openstreetmap.org/search"
+        )
+
+        nominatim_headers = {
+            "User-Agent": (
+                "ASHA-Sathi-Voice-Agent/1.0 "
+                "(healthcare-facility-search)"
+            ),
+            "Accept": "application/json",
+        }
+
+        # Search terms that are useful for Indian healthcare
+        search_query = (
+            f"health centre, {location_clean}, Rajasthan, India"
+        )
+
+        try:
+
+            async with httpx.AsyncClient(
+                timeout=httpx.Timeout(
+                    connect=5.0,
+                    read=10.0,
+                    write=5.0,
+                    pool=5.0,
+                )
+            ) as client:
+
+                response = await client.get(
+                    nominatim_url,
+                    params={
+                        "q": search_query,
+                        "format": "json",
+                        "limit": 5,
+                        "addressdetails": 1,
+                    },
+                    headers=nominatim_headers,
+                )
+
+                logger.info(
+                    f"📡 Nominatim response: "
+                    f"{response.status_code}"
+                )
+
+                response.raise_for_status()
+
+                results = response.json()
+
+                facilities = []
+
+                seen_names = set()
+
+                for item in results:
+
+                    name = item.get("display_name")
+
+                    if not name:
+                        continue
+
+                    # Take the first portion as the facility name
+                    name_parts = name.split(",")
+
+                    facility_name = name_parts[0].strip()
+
+                    if not facility_name:
+                        continue
+
+                    name_key = facility_name.lower()
+
+                    if name_key in seen_names:
+                        continue
+
+                    seen_names.add(name_key)
+
+                    facilities.append(
+                        {
+                            "name": facility_name,
+                            "type": "health centre",
+                        }
+                    )
+
+                    if len(facilities) >= 5:
+                        break
+
+                if facilities:
+
+                    retrieved_at = datetime.now(
+                        timezone.utc
+                    ).strftime(
+                        "%Y-%m-%d %H:%M UTC"
+                    )
+
+                    logger.info(
+                        f"✅ Nominatim found "
+                        f"{len(facilities)} facilities "
+                        f"for {location_clean}"
+                    )
+
+                    result = (
+                        f"Live healthcare facility data "
+                        f"retrieved from OpenStreetMap "
+                        f"at {retrieved_at}.\n"
+                        f"Location: {location_clean}\n"
+                        f"Facilities:\n"
+                    )
+
+                    for facility in facilities:
+                        result += (
+                            f"- {facility['name']} "
+                            f"({facility['type']})\n"
+                        )
+
+                    return result
+
+        except httpx.TimeoutException:
+            logger.warning(
+                f"⚠️ Nominatim timeout for {location_clean}"
+            )
+
+        except httpx.RequestError as e:
+            logger.warning(
+                f"⚠️ Nominatim connection error: {e}"
+            )
+
+        except httpx.HTTPStatusError as e:
+            logger.warning(
+                f"⚠️ Nominatim HTTP error: "
+                f"{e.response.status_code}"
+            )
+
+        except Exception as e:
+            logger.warning(
+                f"⚠️ Nominatim fallback failed: {e}"
+            )
+
+        # ---------------------------------------------------------
+        # 4. FINAL SAFE RESPONSE
+        # ---------------------------------------------------------
+
+        logger.error(
+            f"❌ All healthcare facility sources failed "
+            f"for location={location_clean}"
+        )
+
+        return (
+            f"I am currently unable to retrieve live "
+            f"healthcare facility information for "
+            f"{location_clean}. "
+            f"I don't want to guess or provide incorrect "
+            f"facility details. Please try again shortly."
+        )
 server = AgentServer()
 
 

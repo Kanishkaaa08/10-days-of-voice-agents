@@ -230,3 +230,49 @@ backend/
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+
+## Day 5 – Real-Time Healthcare Facility Lookup
+
+For Day 5, ASHA Sathi was extended with a real-time healthcare facility lookup tool.
+
+The agent can understand when a caller is asking about nearby hospitals, clinics, PHCs, health centres, or other healthcare facilities and automatically call the `get_nearby_health_facilities` function.
+
+### What the tool does
+
+- Accepts the caller's location, such as Tonk or Jaipur.
+- Uses live OpenStreetMap data to find nearby healthcare facilities.
+- Returns facility names and types in a conversational response.
+- Handles different locations independently instead of reusing previous results.
+- Does not invent facility information when live data is unavailable.
+- Provides a spoken fallback when the external data source fails.
+
+### Data Source
+
+The healthcare facility information is **live data retrieved from OpenStreetMap** using the Overpass API, with a Nominatim fallback when required.
+
+The data is not hard-coded into the agent.
+
+### Example
+
+User:
+"Are there any health facilities near Tonk?"
+
+ASHA Sathi:
+The agent calls `get_nearby_health_facilities` with the location `Tonk` and speaks the healthcare facilities returned by the live data source.
+
+### Failure Handling
+
+If the external data source is unavailable or does not return usable information, ASHA Sathi does not guess or hallucinate facility names.
+
+Instead, it gives the caller a clear spoken message that live healthcare facility information is temporarily unavailable and suggests trying again later.
+
+### Day 5 Outcome
+
+The agent can now:
+
+- Detect when a real-world healthcare lookup is required.
+- Automatically call the appropriate tool.
+- Fetch live domain data.
+- Convert the returned data into a natural voice response.
+- Handle external API failures safely.
