@@ -18,6 +18,8 @@ from livekit.agents import (
 )
 from livekit.plugins import deepgram, google, murf, noise_cancellation, silero
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
+from escalation import create_escalation as save_escalation
+from escalation import get_active_escalation_for_caller
 from memory import lookup_caller, save_caller
 
 logger = logging.getLogger("agent")
@@ -547,6 +549,98 @@ class Assistant(Agent):
             f"I don't want to guess or provide incorrect "
             f"facility details. Please try again shortly."
         )
+
+    @function_tool()
+    async def create_escalation(
+        self,
+        context: RunContext,
+        reason: str,
+        summary: str,
+        agent_checks: str,
+        urgency: str,
+        language: str,
+        preferred_followup: str,
+        caller_name: str | None = None,
+    ) -> str:
+        """Create a human-help escalation request.
+
+        Call this tool when:
+        - The caller agreed after you proactively offered human help for a red-flag
+          symptom or diagnosis request, OR
+        - The caller explicitly asked to speak to a human (treat as consent — no extra
+          confirmation needed).
+
+        Do NOT call if the caller refused human help or the situation does not warrant it.
+
+        Do NOT include passwords, OTPs, PINs, account numbers, or
+        authentication secrets in any field.
+
+        Args:
+            reason: Why human help is needed — red_flag_symptom, diagnosis_request,
+                or explicit_human_help_request.
+            summary: Short sanitized summary of the caller's concern.
+            agent_checks: What the agent already asked or checked.
+            urgency: Urgency level — high, medium, or low.
+            language: Caller's preferred language.
+            preferred_followup: How the caller wants to be contacted.
+            caller_name: Caller's name if already known and consented.
+        """
+
+        participant = context.session.room_io.linked_participant
+
+        if participant is None:
+            return (
+                "Unable to create escalation: caller identity not available. "
+                "Do not tell the caller a request was created."
+            )
+
+        logger.info("🔥 TOOL CALLED: create_escalation | reason=%s", reason)
+        user_id = participant.identity
+
+        existing = get_active_escalation_for_caller(user_id)
+        if existing:
+            reference_id = existing.get("reference_id", "unknown")
+            status = existing.get("status", "Open")
+            return (
+                f"This caller already has an active human-help request. "
+                f"Reference ID: {reference_id}. Status: {status}. "
+                f"Do not create a duplicate. Tell the caller their existing reference ID."
+            )
+
+        if not caller_name:
+            memory = lookup_caller(user_id)
+            if memory and memory.get("name"):
+                caller_name = memory["name"]
+
+        try:
+            result = save_escalation(
+                caller_identifier=user_id,
+                caller_name=caller_name,
+                reason=reason,
+                summary=summary,
+                agent_checks=agent_checks,
+                urgency=urgency,
+                language=language,
+                preferred_followup=preferred_followup,
+            )
+        except Exception:
+            logger.exception("Failed to create escalation for user %s", user_id)
+            return (
+                "Escalation request could not be created due to a technical error. "
+                "Do not tell the caller a request was created. "
+                "Apologize and suggest they contact a healthcare facility directly."
+            )
+
+        reference_id = result.get("reference_id", "unknown")
+        return (
+            f"Human-help request created successfully. "
+            f"Reference ID: {reference_id}. "
+            f"Status: Open. "
+            f"Tell the caller their reference ID and that a qualified healthcare "
+            f"professional will review their request. Do not promise immediate response."
+        )
+
+
 server = AgentServer()
 
 

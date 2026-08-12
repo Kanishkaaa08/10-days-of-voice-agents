@@ -2,9 +2,11 @@
 
 import type { ReactNode } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import {
   Activity,
   ArrowRight,
+  ClipboardList,
   HeartHandshake,
   Languages,
   ShieldCheck,
@@ -42,12 +44,21 @@ export function WelcomeView({
           priority
           className="h-auto w-[142px] sm:w-[153px]"
         />
-        <p className="hidden font-mono text-[10px] font-bold tracking-[0.12em] text-[#1d392e] uppercase sm:block">
-          Voice health support
-        </p>
-        <p className="font-mono text-[9px] font-bold tracking-[0.1em] text-[#1d392e] uppercase sm:text-[10px]">
-          Murf Falcon
-        </p>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center gap-2 rounded-full border border-[#d6ecdf] bg-white/80 px-3 py-1.5 text-[10px] font-bold tracking-[0.08em] text-[#187451] uppercase shadow-sm transition hover:bg-white sm:px-4 sm:text-[11px]"
+          >
+            <ClipboardList size={14} aria-hidden="true" />
+            Human-help requests
+          </Link>
+          <p className="hidden font-mono text-[10px] font-bold tracking-[0.12em] text-[#1d392e] uppercase sm:block">
+            Voice health support
+          </p>
+          <p className="font-mono text-[9px] font-bold tracking-[0.1em] text-[#1d392e] uppercase sm:text-[10px]">
+            Murf Falcon
+          </p>
+        </div>
       </header>
 
       <section className="relative mx-auto grid w-full max-w-7xl items-center gap-10 px-5 pt-6 pb-12 sm:px-8 lg:grid-cols-[1.06fr_0.94fr] lg:px-10 lg:pt-14 lg:pb-20">
