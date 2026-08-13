@@ -2,11 +2,26 @@ import logging
 
 from flask import Flask, jsonify, request
 
+from call_analytics import get_analytics_summary
 from escalation import list_escalations, update_escalation_status
 
 logger = logging.getLogger("api_server")
 
 app = Flask(__name__)
+
+
+@app.route("/api/analytics", methods=["GET"])
+def get_analytics():
+    """Return aggregate call analytics calculated from the database."""
+    logger.info("[ANALYTICS API] GET /api/analytics called")
+    try:
+        summary = get_analytics_summary()
+        logger.info("[ANALYTICS API] Returning summary: %s", summary)
+    except Exception:
+        logger.exception("[ANALYTICS API] Failed to load call analytics")
+        return jsonify({"error": "Unable to load call analytics"}), 500
+
+    return jsonify(summary)
 
 
 @app.route("/api/escalations", methods=["GET"])

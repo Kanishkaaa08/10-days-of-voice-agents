@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import httpx
 from datetime import datetime, timezone
@@ -18,11 +19,48 @@ from livekit.agents import (
 )
 from livekit.plugins import deepgram, google, murf, noise_cancellation, silero
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
+from call_analytics import record_call_outcome
 from escalation import create_escalation as save_escalation
 from escalation import get_active_escalation_for_caller
 from memory import lookup_caller, save_caller
 
 logger = logging.getLogger("agent")
+
+
+class CallOutcomeTracker:
+    """Tracks whether a call reached Asha Saathi's success condition."""
+
+    def __init__(self) -> None:
+        self.escalation_success = False
+
+    def mark_escalation_success(self) -> None:
+        self.escalation_success = True
+
+    def determine_outcome(self, session: AgentSession) -> str:
+        if self.escalation_success:
+            return "SUCCESS"
+
+        user_turns = 0
+        agent_turns = 0
+
+        for item in session.history.items:
+            # Skip items that don't have text_content (e.g., AgentHandoff)
+            if not hasattr(item, 'text_content'):
+                continue
+            
+            text = item.text_content
+            if not text or not text.strip():
+                continue
+
+            if item.role == "user":
+                user_turns += 1
+            elif item.role == "assistant":
+                agent_turns += 1
+
+        if user_turns > 0 and agent_turns > 0:
+            return "SUCCESS"
+
+        return "FAILURE"
 
 load_dotenv(".env.local")
 
@@ -31,8 +69,9 @@ load_dotenv(".env.local")
 
 
 class Assistant(Agent):
-    def __init__(self) -> None:
+    def __init__(self, outcome_tracker: CallOutcomeTracker | None = None) -> None:
         super().__init__(instructions=SYSTEM_PROMPT)
+        self._outcome_tracker = outcome_tracker
 
     # To add tools, use the @function_tool decorator.
     # Here's an example that adds a simple weather tool.
@@ -599,6 +638,9 @@ class Assistant(Agent):
 
         existing = get_active_escalation_for_caller(user_id)
         if existing:
+            if self._outcome_tracker is not None:
+                self._outcome_tracker.mark_escalation_success()
+
             reference_id = existing.get("reference_id", "unknown")
             status = existing.get("status", "Open")
             return (
@@ -631,6 +673,9 @@ class Assistant(Agent):
                 "Apologize and suggest they contact a healthcare facility directly."
             )
 
+        if self._outcome_tracker is not None:
+            self._outcome_tracker.mark_escalation_success()
+
         reference_id = result.get("reference_id", "unknown")
         return (
             f"Human-help request created successfully. "
@@ -659,6 +704,10 @@ async def my_agent(ctx: JobContext):
         "room": ctx.room.name,
     }
 
+    call_id = ctx.room.name
+    logger.info("[ANALYTICS] Call started: call_id=%s", call_id)
+    outcome_tracker = CallOutcomeTracker()
+
     # Set up a voice AI pipeline using Murf Falcon, Gemini, Deepgram, and the LiveKit turn detector
     session = AgentSession(
         # Speech-to-text (STT) is your agent's ears, turning the user's speech into text that the LLM can understand
@@ -686,6 +735,30 @@ async def my_agent(ctx: JobContext):
         preemptive_generation=True,
     )
 
+    async def record_call_analytics() -> None:
+        logger.info("[ANALYTICS] Recording analytics triggered: call_id=%s", call_id)
+        try:
+            outcome = outcome_tracker.determine_outcome(session)
+            logger.info("[ANALYTICS] Determined outcome: call_id=%s outcome=%s", call_id, outcome)
+            logger.info("[ANALYTICS] Saving call analytics...")
+            inserted = record_call_outcome(call_id, outcome)
+            logger.info(
+                "[ANALYTICS] Analytics record saved: call_id=%s outcome=%s inserted=%s",
+                call_id,
+                outcome,
+                inserted,
+            )
+        except Exception:
+            logger.exception("[ANALYTICS] Failed to record call analytics for call_id=%s", call_id)
+
+    @ctx.room.on("participant_disconnected")
+    def on_participant_disconnected(participant: rtc.RemoteParticipant):
+        logger.info("[ANALYTICS] Participant disconnected: call_id=%s participant=%s", call_id, participant.identity)
+        # Record analytics when the participant (caller) disconnects
+        asyncio.create_task(record_call_analytics())
+
+    logger.info("[ANALYTICS] Analytics handlers registered: call_id=%s", call_id)
+
     # To use a realtime model instead of a voice pipeline, use the following session setup instead.
     # (Note: This is for the OpenAI Realtime API. For other providers, see https://docs.livekit.io/agents/models/realtime/))
     # 1. Install livekit-agents[openai]
@@ -705,8 +778,9 @@ async def my_agent(ctx: JobContext):
     # await avatar.start(session, room=ctx.room)
 
     # Start the session, which initializes the voice pipeline and warms up the models
+    logger.info("[ANALYTICS] Starting session: call_id=%s", call_id)
     await session.start(
-        agent=Assistant(),
+        agent=Assistant(outcome_tracker=outcome_tracker),
         room=ctx.room,
         room_options=room_io.RoomOptions(
             audio_input=room_io.AudioInputOptions(
@@ -719,9 +793,12 @@ async def my_agent(ctx: JobContext):
             ),
         ),
     )
+    logger.info("[ANALYTICS] Session started: call_id=%s", call_id)
 
     # Join the room and connect to the user
+    logger.info("[ANALYTICS] Connecting to room: call_id=%s", call_id)
     await ctx.connect()
+    logger.info("[ANALYTICS] Connected to room: call_id=%s", call_id)
 
 
 if __name__ == "__main__":

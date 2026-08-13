@@ -50,7 +50,7 @@ export function WelcomeView({
             className="inline-flex items-center gap-2 rounded-full border border-[#d6ecdf] bg-white/80 px-3 py-1.5 text-[10px] font-bold tracking-[0.08em] text-[#187451] uppercase shadow-sm transition hover:bg-white sm:px-4 sm:text-[11px]"
           >
             <ClipboardList size={14} aria-hidden="true" />
-            Human-help requests
+            Human-help dashboard
           </Link>
           <p className="hidden font-mono text-[10px] font-bold tracking-[0.12em] text-[#1d392e] uppercase sm:block">
             Voice health support
