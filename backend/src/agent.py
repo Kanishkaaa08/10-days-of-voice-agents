@@ -1,17 +1,17 @@
 import asyncio
 import logging
-import httpx
 from datetime import datetime, timezone
+
+import httpx
 from dotenv import load_dotenv
 from livekit import rtc
-from prompt import SYSTEM_PROMPT
 from livekit.agents import (
     Agent,
     AgentServer,
     AgentSession,
     JobContext,
-    RunContext,
     JobProcess,
+    RunContext,
     cli,
     function_tool,
     room_io,
@@ -19,10 +19,13 @@ from livekit.agents import (
 )
 from livekit.plugins import deepgram, google, murf, noise_cancellation, silero
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
+
 from call_analytics import record_call_outcome
+from clinic_specialist import ClinicSpecialist
 from escalation import create_escalation as save_escalation
 from escalation import get_active_escalation_for_caller
 from memory import lookup_caller, save_caller
+from prompt import SYSTEM_PROMPT
 
 logger = logging.getLogger("agent")
 
@@ -47,7 +50,7 @@ class CallOutcomeTracker:
             # Skip items that don't have text_content (e.g., AgentHandoff)
             if not hasattr(item, 'text_content'):
                 continue
-            
+
             text = item.text_content
             if not text or not text.strip():
                 continue
@@ -174,7 +177,7 @@ class Assistant(Agent):
             f"Saved name: {saved.get('name') or 'none'}. "
             f"Saved facts: {saved.get('facts') or {}}."
         )
-        
+
     @function_tool()
     async def get_nearby_health_facilities(
         self,
@@ -685,6 +688,48 @@ class Assistant(Agent):
             f"professional will review their request. Do not promise immediate response."
         )
 
+    @function_tool()
+    async def transfer_to_clinic_specialist(self, context: RunContext):
+        """Transfer the conversation to the Clinic & Appointment Specialist.
+
+        Use this tool when the user needs help with:
+        - Booking, scheduling, or finding a doctor's appointment
+        - Clinic-related assistance
+        - Changing or cancelling appointments
+        - Appointment scheduling conversations
+
+        Do NOT use this handoff for:
+        - General health questions
+        - Symptom screening or diagnosis
+        - Normal ASHA Sathi conversations
+        - Emergency medical guidance
+
+        Before calling this tool, tell the user:
+        "I'll connect you with our clinic and appointment specialist so they can help you with this."
+        """
+        logger.info("🔥 TOOL CALLED: transfer_to_clinic_specialist")
+
+        try:
+            # Create the specialist agent instance with conversation context
+            # Pass chat_ctx.copy(exclude_instructions=True) to preserve conversation history
+            # without the main agent's system prompt
+            specialist = ClinicSpecialist(
+                chat_ctx=self.chat_ctx.copy(exclude_instructions=True)
+            )
+
+            # Return the specialist agent to trigger handoff
+            # LiveKit will automatically transfer control to the returned agent
+            return specialist, "I'll connect you with our clinic and appointment specialist so they can help you with this."
+
+        except Exception as e:
+            logger.exception("Failed to hand off to clinic specialist: %s", e)
+            # Return error message as string (not a handoff tuple)
+            return (
+                "I apologize, but I'm unable to connect you to the clinic specialist right now. "
+                "I can continue helping you with general health guidance, or you may try contacting "
+                "the clinic directly for appointment assistance."
+            )
+
 
 server = AgentServer()
 
@@ -755,7 +800,8 @@ async def my_agent(ctx: JobContext):
     def on_participant_disconnected(participant: rtc.RemoteParticipant):
         logger.info("[ANALYTICS] Participant disconnected: call_id=%s participant=%s", call_id, participant.identity)
         # Record analytics when the participant (caller) disconnects
-        asyncio.create_task(record_call_analytics())
+        task = asyncio.create_task(record_call_analytics())
+        _ = task  # Store reference to satisfy linter
 
     logger.info("[ANALYTICS] Analytics handlers registered: call_id=%s", call_id)
 

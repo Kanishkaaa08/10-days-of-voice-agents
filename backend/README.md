@@ -276,3 +276,72 @@ The agent can now:
 - Fetch live domain data.
 - Convert the returned data into a natural voice response.
 - Handle external API failures safely.
+
+
+## Day 9 — Specialist Agent Handoff
+
+For Day 9, ASHA Sathi was extended with a specialist agent handoff capability.
+
+### Architecture
+
+The system now includes two agents:
+
+1. **Main ASHA Sathi Agent** — Handles general health-access conversations, symptom screening, facility lookup, memory management, and human-help escalation.
+
+2. **Clinic & Appointment Specialist** — A focused specialist that handles only clinic and doctor appointment-related requests.
+
+### Handoff Mechanism
+
+The main agent has a tool called `transfer_to_clinic_specialist` that uses LiveKit's built-in handoff capability:
+
+- When the user requests appointment-related help, the main agent recognizes this need
+- The main agent tells the user: "I'll connect you with our clinic and appointment specialist so they can help you with this."
+- The main agent calls the handoff tool, which transfers control to the Clinic & Appointment Specialist
+- LiveKit automatically preserves the full conversation history, so the specialist understands the user's request without repetition
+- The specialist introduces itself naturally and continues the conversation
+
+### When Handoff Occurs
+
+The main agent hands off to the specialist for:
+
+- Booking doctor appointments
+- Scheduling clinic visits
+- Finding clinic availability
+- Changing or rescheduling appointments
+- Cancelling appointments
+- Questions about appointment timing
+- Appointment preparation guidance
+
+The main agent does NOT hand off for:
+
+- General health questions
+- Symptom screening or diagnosis
+- Emergency medical guidance
+- Normal ASHA Sathi conversations
+
+### Context Preservation
+
+LiveKit's `context.session.handoff()` automatically preserves the conversation history. The specialist receives the full conversation context and can understand what the user was asking before the handoff. The user does not need to repeat their request.
+
+### Error Handling
+
+If the handoff fails (e.g., specialist cannot be started), the main agent catches the exception and provides a graceful fallback message, suggesting the user continue with general health guidance or contact the clinic directly.
+
+### Testing the Handoff
+
+To test the specialist handoff:
+
+1. Start the voice agent: `uv run python src/agent.py dev`
+2. Open the browser-based voice interface
+3. Say: "I need to book a doctor's appointment for tomorrow."
+4. Expected flow:
+   - ASHA Sathi recognizes the appointment request
+   - ASHA Sathi says: "I'll connect you with our clinic and appointment specialist so they can help you with this."
+   - The specialist takes over and introduces itself
+   - The specialist understands the appointment request from context
+   - The specialist continues the conversation without requiring repetition
+
+To test that normal requests stay with the main agent:
+
+1. Say: "Hello, what can you help me with?"
+2. Expected: ASHA Sathi responds normally without handoff.
