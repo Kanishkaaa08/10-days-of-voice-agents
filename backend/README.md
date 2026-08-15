@@ -1,347 +1,973 @@
-# Backend — Voice Agent with Murf Falcon TTS
+# 🎙️ Asha Saathi — Voice AI Agent
 
-The Python backend for the Voice Agent Starter. It runs a real-time voice AI pipeline using [LiveKit Agents](https://docs.livekit.io/agents), connecting Murf Falcon TTS, Deepgram STT, and Google Gemini into a single conversational agent.
+> A real-time conversational voice agent built during the **10 Days of Voice Agents — VoiceForBharat Edition**, powered by **Murf Falcon**.
 
-## How It Works
+Asha Saathi started as a simple voice-agent experiment and gradually evolved into a complete voice AI system capable of having real-time conversations, following safety guardrails, remembering returning users, using tools, making outbound calls, escalating conversations to humans, tracking call outcomes, and handing conversations to specialist agents.
 
-```
-User speaks → [Deepgram STT] → text → [Gemini LLM] → response → [Murf Falcon TTS] → audio → User hears
-```
+This repository contains my work and learnings from the 10-day voice-agent journey.
 
-LiveKit handles the real-time audio transport. The agent connects to LiveKit as a participant, listens for user speech, and responds with synthesized audio.
+---
 
-## Setup
+# 🌱 About Asha Saathi
 
-### 1. Install dependencies
+Asha Saathi is a conversational voice agent designed to make interacting with AI more natural through voice.
 
-```bash
-cd backend
-uv sync
-```
+Instead of typing a request into a traditional chatbot, users can simply speak with the agent.
 
-### 2. Configure environment
+The basic interaction is:
 
-```bash
-cp .env.example .env.local
-```
+User speaks → Speech-to-Text → Agent/LLM → Tools/Memory → Murf Falcon TTS → Voice response
 
-Fill in your keys in `.env.local`:
+However, the goal of this project was not just to make an AI that could talk.
 
-| Variable | Where to get it |
-|----------|-----------------|
-| `LIVEKIT_URL` | [LiveKit Cloud](https://cloud.livekit.io/) → Settings |
-| `LIVEKIT_API_KEY` | [LiveKit Cloud](https://cloud.livekit.io/) → Settings |
-| `LIVEKIT_API_SECRET` | [LiveKit Cloud](https://cloud.livekit.io/) → Settings |
-| `MURF_API_KEY` | [murf.ai/api/dashboard](https://murf.ai/api/dashboard) |
-| `DEEPGRAM_API_KEY` | [deepgram.com](https://console.deepgram.com/) |
-| `GOOGLE_API_KEY` | [aistudio.google.com](https://aistudio.google.com/apikey) |
+Over the 10-day challenge, I gradually added capabilities that made the agent more useful and closer to a real-world voice AI system.
 
-For LiveKit Cloud users, you can auto-populate LiveKit credentials:
+These include:
 
-```bash
-lk cloud auth
-lk app env -w -d .env.local
-```
+- 🎙️ Real-time voice conversations
+- 🧠 Persistent caller memory
+- 🛡️ Personality and safety guardrails
+- 🔧 Tool calling
+- 📍 Healthcare facility lookup
+- 📞 Outbound calling
+- 👩‍💼 Human escalation
+- 📊 Call analytics
+- 🤝 Specialist-agent handoffs
+- 🖥️ Real-time agent state in the frontend
 
-### 3. Download models
+---
 
-```bash
-uv run python src/agent.py download-files
-```
+# 🚀 My 10-Day Voice Agent Journey
 
-This downloads Silero VAD and the LiveKit turn detector models.
+## Day 1 — Building the First Voice Agent
 
-### 4. Run the agent
+### The Task
 
-```bash
-# Development mode (auto-reload)
-uv run python src/agent.py dev
+The first day was about understanding the basic building blocks of a voice agent and getting a real-time conversation working.
 
-# Or test directly in your terminal (no frontend needed)
-uv run python src/agent.py console
+The core components were:
 
-# Production
-uv run python src/agent.py start
-```
+- Speech-to-Text
+- LLM
+- Text-to-Speech
+- Real-time audio transport
 
-## Configuration
+### What I Built
 
-All configuration lives in [`src/agent.py`](src/agent.py).
+I started building Asha Saathi as a real-time voice agent.
 
-### System prompt
+The first version followed a simple pipeline:
 
-The `SYSTEM_PROMPT` constant at the top of `agent.py` controls what your agent does. Change it to build any voice-powered use case.
+```text
+User speaks
+     ↓
+Speech-to-Text
+     ↓
+LLM
+     ↓
+Text-to-Speech
+     ↓
+User hears response
+````
 
-#### Example prompts
+This was the foundation for everything that came later.
 
-**Customer Support (default):**
+I used LiveKit for real-time communication, Deepgram for speech recognition, Google Gemini as the LLM layer, and Murf Falcon for voice generation.
 
-```
-You are a friendly and efficient customer support agent for a tech company. Help users with account issues, billing questions, and product troubleshooting. Be concise, empathetic, and solution-oriented. If you don't know something, say so honestly and offer to escalate.
-```
+The main goal on Day 1 was simply:
 
-**Language Tutor:**
+> Get an AI agent that can listen, think, and speak back in real time.
 
-```
-You are a patient and encouraging language tutor helping the user practice conversational Spanish. Speak primarily in Spanish but switch to English to explain grammar or vocabulary when needed. Correct mistakes gently and suggest better phrasing. Keep conversations natural and fun.
-```
+---
 
-**AI Receptionist:**
+## Day 2 — Giving the Agent a Personality
 
-```
-You are a professional receptionist for a medical clinic. Help callers schedule appointments, answer questions about office hours and services, and take messages for doctors. Be warm but efficient. Ask for the caller's name and reason for calling upfront.
-```
+### The Task
 
-**Interview Coach:**
+A voice agent should not sound like a generic AI model.
 
-```
-You are an experienced interview coach. Conduct mock interviews with the user for software engineering roles. Ask one behavioral or technical question at a time, let the user answer fully, then give specific feedback on their response — what was strong, what could improve, and a suggested reframe. Keep the tone encouraging but honest.
-```
+The task was to define the agent's identity, personality, objectives, and conversational behaviour.
 
-**Sales Assistant:**
+### What I Built
 
-```
-You are a knowledgeable sales assistant for an electronics store. Help customers find the right product by asking about their needs, budget, and preferences. Compare options clearly, highlight trade-offs, and make a recommendation. Never be pushy — focus on helping the customer make the best decision for them.
-```
+I created a dedicated system prompt for Asha Saathi.
 
-**Fitness Coach:**
+Instead of relying on the default behaviour of the LLM, I defined:
 
-```
-You are an upbeat personal fitness coach. Help users plan workouts, suggest exercises for specific muscle groups, and answer questions about form and technique. Ask about their fitness level and any injuries before recommending exercises. Keep instructions clear and motivating.
-```
+* Who Asha Saathi is
+* How the agent should communicate
+* What kind of help it should provide
+* How it should respond to users
+* How it should handle unclear requests
+* What its overall objectives are
 
-**Storyteller / Bedtime Narrator:**
+This was an important change because the agent started feeling less like an LLM with a voice and more like an actual assistant.
 
-```
-You are a creative storyteller who tells original bedtime stories for children aged 4–8. Ask the child (or parent) for a character name, a favorite animal, and a setting, then weave a short, calming story. Use vivid but simple language. End each story on a peaceful, sleepy note.
-```
+---
 
-**Meeting Summarizer:**
+## Day 3 — Adding Guardrails
 
-```
-You are a meeting assistant. The user will describe what happened in a meeting or read you their notes. Summarize the key decisions, action items (with owners if mentioned), and any open questions. Be concise and structured. Ask clarifying questions if something is ambiguous.
-```
+### The Task
 
-**Trivia Game Host:**
+A useful AI agent needs boundaries.
 
-```
-You are an enthusiastic trivia game host. Ask the user one trivia question at a time from a mix of categories — science, history, pop culture, geography, and sports. Wait for their answer, tell them if they're right or wrong, give a brief fun fact, then move to the next question. Keep score and announce it every 5 questions.
-```
+The goal was to make sure the agent would not blindly answer every request and would behave safely when a situation was outside its scope.
 
-**Mental Health Check-in Companion:**
+### What I Built
 
-```
-You are a gentle, non-clinical wellness companion. Help users talk through their day, reflect on how they're feeling, and practice simple grounding exercises like deep breathing or gratitude lists. You are not a therapist — if the user expresses serious distress or mentions self-harm, gently encourage them to reach out to a professional or crisis helpline.
-```
+I added behavioural and safety guardrails to Asha Saathi.
 
-### Voice
+The agent was given clear instructions about:
 
-Set the `voice` argument in the `murf.TTS(...)` call:
+* What it can and cannot help with
+* How it should handle uncertain situations
+* When it should ask for clarification
+* When it should avoid unsupported claims
+* When it should stop trying to handle something itself
+* When it should escalate a conversation
 
-```python
-tts=murf.TTS(
-    voice="en-US-matthew",    # Change this
-    style="Conversation",
-    tokenizer=tokenize.basic.SentenceTokenizer(min_sentence_len=2),
-    text_pacing=True
-)
-```
+This became especially important later when I added tools, memory, human escalation, and specialist agents.
 
-Some voice options:
+One of the biggest lessons from this stage was that:
 
-| Voice ID | Description |
-|----------|-------------|
-| `en-US-matthew` | US English, male (default) |
-| `en-US-natalie` | US English, female |
-| `en-UK-ruby` | UK English, female |
-| `en-US-miles` | US English, male |
+> A good agent is not one that answers everything. A good agent also knows when it should not answer.
 
-Browse all 150+ voices: [Murf Voice Library](https://murf.ai/api/docs/voices-styles/voice-library).
+---
 
-### STT (Speech-to-Text)
+## Day 4 — Giving Asha Saathi Memory
 
-Default is Deepgram Nova-3. Change in the `AgentSession(stt=...)` call:
+### The Task
 
-```python
-stt=deepgram.STT(model="nova-3")
-```
+A voice assistant becomes much more useful when returning users don't have to repeat information they have already shared.
 
-### LLM
+The goal was to introduce memory into the agent.
 
-Default is Google Gemini. To switch:
+### What I Built
 
-- **Gemini (default):** Set `GOOGLE_API_KEY` in `.env.local`
-- **OpenAI:** Set `OPENAI_API_KEY`, install `livekit-agents[openai]`, and change the `llm=` argument
+I implemented persistent caller memory.
 
-## Testing
+Asha Saathi can look up information associated with a returning caller and use relevant information during the conversation.
 
-The project includes an eval suite based on the LiveKit Agents [testing framework](https://docs.livekit.io/agents/build/testing/):
+The memory system can work with structured information such as:
 
-```bash
-uv run pytest
+* Caller name
+* Language preference
+* Limited caller facts
+* Previous interaction information
+
+The memory flow is:
+
+```text
+Caller
+  ↓
+Identify caller
+  ↓
+Look up saved memory
+  ↓
+Use relevant context
+  ↓
+Conversation
+  ↓
+Explicit consent
+  ↓
+Save limited structured information
 ```
 
-Tests are in [`tests/test_agent.py`](tests/test_agent.py) and use LLM-as-judge evaluations to verify the agent behaves correctly (friendly greetings, grounding, refusing harmful requests).
+I also made the memory flow consent-aware and avoided treating the entire conversation transcript as something that should automatically be stored.
 
-To run tests in CI, you'll need to add `LIVEKIT_URL`, `LIVEKIT_API_KEY`, and `LIVEKIT_API_SECRET` as repository secrets.
+This was my first step toward making the agent feel like it could actually remember its users rather than starting from zero every time.
 
-## Deployment
+---
 
-### Railway
+## Day 5 — Giving the Agent Tools
 
-[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/tIVCF1?referralCode=cNjn2P&utm_medium=integration&utm_source=template&utm_campaign=generic)
+### The Task
 
-Set these environment variables in Railway:
-- `MURF_API_KEY`
-- `DEEPGRAM_API_KEY`
-- `GOOGLE_API_KEY`
-- `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`
+An LLM can generate answers, but it cannot automatically know current external information.
 
-### Docker
+The goal was to make Asha Saathi capable of using tools when it needed additional information or wanted to perform an action.
 
-A production-ready [Dockerfile](Dockerfile) is included:
+### What I Built
 
-```bash
-docker build -t murf-voice-agent .
-docker run --env-file .env.local murf-voice-agent
+I added function tools that the agent can call when required.
+
+One of the important tools I implemented allows Asha Saathi to find nearby healthcare facilities using live OpenStreetMap data.
+
+The tool can search for:
+
+* Hospitals
+* Clinics
+* Doctors
+* Health centres
+* Healthcare facilities
+
+The flow became:
+
+```text
+User asks for information
+        ↓
+Asha Saathi understands the request
+        ↓
+Agent decides a tool is required
+        ↓
+Healthcare facility lookup
+        ↓
+Live OpenStreetMap data
+        ↓
+Tool result
+        ↓
+Asha Saathi explains the result through voice
 ```
 
-## Project Structure
+This changed the way I thought about the LLM.
 
+The LLM wasn't the whole application anymore.
+
+It became the reasoning layer that could decide when to use other parts of the system.
+
+---
+
+## Day 6 — Making the Agent More Real-Time and Reliable
+
+### The Task
+
+As more components were added, the voice pipeline became more complex.
+
+The goal was to improve the overall real-time experience and make the different parts of the system work together reliably.
+
+### What I Worked On
+
+I worked on the interaction between:
+
+* Frontend
+* LiveKit
+* Speech-to-Text
+* LLM
+* Tools
+* Text-to-Speech
+
+At this point I started running into practical problems involving:
+
+* API configuration
+* Real-time connections
+* Audio flow
+* Server behaviour
+* Latency
+* Error handling
+
+This was one of the days where debugging became as important as development.
+
+Instead of looking at the whole system as one large problem, I learned to debug it layer by layer:
+
+```text
+Frontend
+   ↓
+Audio connection
+   ↓
+Speech-to-Text
+   ↓
+Agent / LLM
+   ↓
+Tool execution
+   ↓
+Text-to-Speech
+   ↓
+Audio output
 ```
-backend/
-├── src/
-│   └── agent.py          # Agent entrypoint — pipeline, prompt, config
-├── tests/
-│   └── test_agent.py     # LLM-judged eval suite
-├── .env.example           # Environment variable template
-├── pyproject.toml         # Python dependencies (uv)
-├── Dockerfile             # Production container
-└── railway.toml           # Railway deploy config
+
+This made it much easier to identify where something was actually failing.
+
+---
+
+## Day 7 — Outbound Voice Calls
+
+### The Task
+
+A voice agent should not necessarily be limited to a user opening a browser and clicking a microphone button.
+
+The goal was to explore outbound phone conversations.
+
+### What I Built
+
+I added an outbound calling workflow using Twilio along with the existing voice-agent infrastructure.
+
+This allowed Asha Saathi to move from a browser-only interaction toward a phone-based voice workflow.
+
+The architecture became:
+
+```text
+Outbound Call
+      ↓
+Telephony
+      ↓
+Voice Agent
+      ↓
+Speech-to-Text
+      ↓
+LLM / Agent
+      ↓
+Murf Falcon
+      ↓
+Voice conversation
 ```
 
-## Links
+This introduced new challenges around call lifecycle, connection handling, user context, and call outcomes.
 
-- [Murf Falcon TTS Docs](https://murf.ai/api/docs/text-to-speech/streaming)
-- [Murf Voice Library](https://murf.ai/api/docs/voices-styles/voice-library)
-- [LiveKit Agents Docs](https://docs.livekit.io/agents)
-- [Deepgram Nova-3 Docs](https://developers.deepgram.com)
+It also made the project feel much closer to a real voice-agent application rather than a browser demo.
 
-## License
+---
 
-MIT — see [LICENSE](LICENSE).
+## Day 8 — Human Escalation and Call Analytics
 
+### The Task
 
-## Day 5 – Real-Time Healthcare Facility Lookup
+AI should not always try to solve everything on its own.
 
-For Day 5, ASHA Sathi was extended with a real-time healthcare facility lookup tool.
+The goal was to add a way for Asha Saathi to involve a human when necessary and also track what happened during conversations.
 
-The agent can understand when a caller is asking about nearby hospitals, clinics, PHCs, health centres, or other healthcare facilities and automatically call the `get_nearby_health_facilities` function.
+### What I Built
 
-### What the tool does
+I implemented a human escalation flow.
 
-- Accepts the caller's location, such as Tonk or Jaipur.
-- Uses live OpenStreetMap data to find nearby healthcare facilities.
-- Returns facility names and types in a conversational response.
-- Handles different locations independently instead of reusing previous results.
-- Does not invent facility information when live data is unavailable.
-- Provides a spoken fallback when the external data source fails.
+When the agent determines that a conversation should not continue entirely through AI, it can create an escalation for human support.
 
-### Data Source
+The flow is:
 
-The healthcare facility information is **live data retrieved from OpenStreetMap** using the Overpass API, with a Nominatim fallback when required.
+```text
+User
+ ↓
+Asha Saathi
+ ↓
+Can AI safely handle this?
+ ├── Yes → Continue
+ │
+ └── No → Escalate
+              ↓
+         Human support
+```
 
-The data is not hard-coded into the agent.
+I also implemented call outcome tracking and a call analytics dashboard.
 
-### Example
+Instead of only checking whether the agent was technically working, I could now look at the outcome of conversations.
 
-User:
-"Are there any health facilities near Tonk?"
+This introduced an important concept:
 
-ASHA Sathi:
-The agent calls `get_nearby_health_facilities` with the location `Tonk` and speaks the healthcare facilities returned by the live data source.
+> Building an AI agent is not only about making it work. You also need visibility into what happened during its conversations.
 
-### Failure Handling
-
-If the external data source is unavailable or does not return usable information, ASHA Sathi does not guess or hallucinate facility names.
-
-Instead, it gives the caller a clear spoken message that live healthcare facility information is temporarily unavailable and suggests trying again later.
-
-### Day 5 Outcome
-
-The agent can now:
-
-- Detect when a real-world healthcare lookup is required.
-- Automatically call the appropriate tool.
-- Fetch live domain data.
-- Convert the returned data into a natural voice response.
-- Handle external API failures safely.
-
+---
 
 ## Day 9 — Specialist Agent Handoff
 
-For Day 9, ASHA Sathi was extended with a specialist agent handoff capability.
+### The Task
 
-### Architecture
+The goal was to make the system more modular by allowing the main agent to hand conversations to another agent when specialist knowledge or behaviour was required.
 
-The system now includes two agents:
+### What I Built
 
-1. **Main ASHA Sathi Agent** — Handles general health-access conversations, symptom screening, facility lookup, memory management, and human-help escalation.
+I added a specialist-agent workflow with a **Clinic Specialist**.
 
-2. **Clinic & Appointment Specialist** — A focused specialist that handles only clinic and doctor appointment-related requests.
+Instead of building one huge agent that handles every possible situation, Asha Saathi can recognize when a request should be handled by a specialist.
 
-### Handoff Mechanism
+The flow is:
 
-The main agent has a tool called `transfer_to_clinic_specialist` that uses LiveKit's built-in handoff capability:
+```text
+                    User
+                      ↓
+                Asha Saathi
+                      ↓
+               Understand intent
+                      ↓
+             Specialist required?
+                ↙           ↘
+              No             Yes
+               ↓              ↓
+           Continue      Clinic Specialist
+                              ↓
+                     Continue with context
+```
 
-- When the user requests appointment-related help, the main agent recognizes this need
-- The main agent tells the user: "I'll connect you with our clinic and appointment specialist so they can help you with this."
-- The main agent calls the handoff tool, which transfers control to the Clinic & Appointment Specialist
-- LiveKit automatically preserves the full conversation history, so the specialist understands the user's request without repetition
-- The specialist introduces itself naturally and continues the conversation
+The important part of a handoff is not simply switching agents.
 
-### When Handoff Occurs
+The specialist needs enough context to continue the conversation naturally so that the user doesn't have to explain everything again.
 
-The main agent hands off to the specialist for:
+This was one of the most interesting parts of the challenge because it introduced me to the idea of building systems where multiple agents can work together.
 
-- Booking doctor appointments
-- Scheduling clinic visits
-- Finding clinic availability
-- Changing or rescheduling appointments
-- Cancelling appointments
-- Questions about appointment timing
-- Appointment preparation guidance
+---
 
-The main agent does NOT hand off for:
+## Day 10 — Sharing the Journey
 
-- General health questions
-- Symptom screening or diagnosis
-- Emergency medical guidance
-- Normal ASHA Sathi conversations
+### The Task
 
-### Context Preservation
+The final day was about documenting the project and sharing what was learned during the challenge.
 
-LiveKit's `context.session.handoff()` automatically preserves the conversation history. The specialist receives the full conversation context and can understand what the user was asking before the handoff. The user does not need to repeat their request.
+Instead of building another major feature, I focused on turning the work from the previous nine days into something another developer could understand and learn from.
 
-### Error Handling
+### What I Did
 
-If the handoff fails (e.g., specialist cannot be started), the main agent catches the exception and provides a graceful fallback message, suggesting the user continue with general health guidance or contact the clinic directly.
+For Day 10, I prepared:
 
-### Testing the Handoff
+* Project documentation
+* This GitHub README
+* The final architecture explanation
+* Setup and installation instructions
+* A technical blog
+* Project/demo links
+* A LinkedIn post sharing the journey
 
-To test the specialist handoff:
+The goal is to make the project understandable not only to someone looking at the final application, but also to someone who wants to build their own voice agent.
 
-1. Start the voice agent: `uv run python src/agent.py dev`
-2. Open the browser-based voice interface
-3. Say: "I need to book a doctor's appointment for tomorrow."
-4. Expected flow:
-   - ASHA Sathi recognizes the appointment request
-   - ASHA Sathi says: "I'll connect you with our clinic and appointment specialist so they can help you with this."
-   - The specialist takes over and introduces itself
-   - The specialist understands the appointment request from context
-   - The specialist continues the conversation without requiring repetition
+---
 
-To test that normal requests stay with the main agent:
+# 🧠 Final System
 
-1. Say: "Hello, what can you help me with?"
-2. Expected: ASHA Sathi responds normally without handoff.
+After ten days, the project had evolved from a basic voice pipeline into a complete voice-agent system.
+
+The final flow can be summarized as:
+
+```text
+                         USER
+                           │
+                           ▼
+                    Voice / Phone
+                           │
+                           ▼
+                  Real-Time Transport
+                           │
+                           ▼
+                    Speech-to-Text
+                           │
+                           ▼
+                   ┌───────────────┐
+                   │ Asha Saathi   │
+                   │    Agent      │
+                   └───────┬───────┘
+                           │
+            ┌──────────────┼──────────────┐
+            │              │              │
+            ▼              ▼              ▼
+         Memory          Tools       Guardrails
+                           │
+                           ▼
+                 Healthcare Lookup
+                           │
+            ┌──────────────┴──────────────┐
+            │                             │
+            ▼                             ▼
+       Human Escalation            Clinic Specialist
+            │                             │
+            └──────────────┬──────────────┘
+                           │
+                           ▼
+                      Agent Response
+                           │
+                           ▼
+                    Murf Falcon TTS
+                           │
+                           ▼
+                    Voice Response
+                           │
+                           ▼
+                         USER
+
+                   ┌─────────────────┐
+                   │ Call Analytics  │
+                   └─────────────────┘
+```
+
+---
+
+# ✨ Final Features
+
+| Feature                | Description                                     |
+| ---------------------- | ----------------------------------------------- |
+| 🎙️ Real-time voice    | Users can have natural voice conversations      |
+| 🗣️ Speech recognition | Converts user speech into text                  |
+| 🔊 Murf Falcon         | Generates fast, natural voice responses         |
+| 🧠 LLM reasoning       | Understands requests and decides what to do     |
+| 🛡️ Guardrails         | Controls agent behaviour and safety             |
+| 🧠 Memory              | Remembers limited structured caller information |
+| 🔧 Tools               | Allows the agent to retrieve useful information |
+| 📍 Healthcare lookup   | Searches live healthcare facilities             |
+| 📞 Outbound calls      | Supports phone-based voice interactions         |
+| 👩‍💼 Human escalation | Allows conversations to be escalated            |
+| 📊 Analytics           | Tracks call outcomes                            |
+| 🤝 Specialist handoff  | Transfers conversations to specialist agents    |
+
+---
+
+# 🛠️ Tech Stack
+
+## AI & Voice
+
+* **Murf Falcon** — Text-to-Speech
+* **Deepgram** — Speech-to-Text
+* **Google Gemini** — LLM
+* **LiveKit Agents** — Voice-agent framework
+* **LiveKit** — Real-time audio transport
+
+## Backend
+
+* Python
+* FastAPI
+* HTTPX
+* LiveKit Agents
+* Twilio
+
+## Frontend
+
+* Next.js
+* React
+* TypeScript
+* Tailwind CSS
+* LiveKit Client
+
+## Data & External Services
+
+* OpenStreetMap
+* Overpass API
+* Nominatim
+* LiveKit
+* Murf
+* Deepgram
+* Google Gemini
+* Twilio
+
+---
+
+# 📁 Project Structure
+
+```text
+10-days-of-voice-agents/
+│
+├── backend/
+│   ├── src/
+│   │   ├── agent.py
+│   │   ├── api_server.py
+│   │   ├── call_analytics.py
+│   │   ├── clinic_specialist.py
+│   │   ├── escalation.py
+│   │   ├── memory.py
+│   │   ├── outbound_prompt.py
+│   │   ├── prompt.py
+│   │   └── twilio_server.py
+│   │
+│   ├── tests/
+│   ├── .env.example
+│   └── pyproject.toml
+│
+├── frontend/
+│   ├── app/
+│   ├── components/
+│   ├── public/
+│   ├── .env.example
+│   └── package.json
+│
+├── start_app.sh
+├── start_app.ps1
+├── .gitignore
+└── README.md
+```
+
+---
+
+# 💻 Requirements
+
+Before running the project, make sure you have:
+
+* Python 3.10+
+* Node.js 18+
+* npm
+* pnpm
+* uv
+* A LiveKit project
+* Internet connection for external APIs
+
+Depending on which features you want to use, you will also need API credentials for:
+
+* Murf
+* LiveKit
+* Deepgram
+* Google Gemini
+* Twilio
+
+---
+
+# 🚀 Installation
+
+## 1. Clone the Repository
+
+```bash
+git clone https://github.com/Kanishkaaa08/10-days-of-voice-agents.git
+
+cd 10-days-of-voice-agents
+```
+
+---
+
+## 2. Install uv
+
+### Windows
+
+```powershell
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+### macOS / Linux
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+---
+
+## 3. Install pnpm
+
+```bash
+npm install -g pnpm
+```
+
+---
+
+# 🔐 Environment Variables
+
+The project uses environment variables for API credentials.
+
+Create:
+
+```text
+backend/.env.local
+```
+
+and:
+
+```text
+frontend/.env.local
+```
+
+Use the existing `.env.example` files as a reference.
+
+A typical backend configuration will look like:
+
+```env
+MURF_API_KEY=your_murf_api_key
+
+LIVEKIT_URL=your_livekit_url
+LIVEKIT_API_KEY=your_livekit_api_key
+LIVEKIT_API_SECRET=your_livekit_api_secret
+
+DEEPGRAM_API_KEY=your_deepgram_api_key
+
+GOOGLE_API_KEY=your_google_api_key
+```
+
+For outbound calling, configure the required Twilio credentials in your local environment.
+
+### ⚠️ Never expose secrets
+
+Do not commit:
+
+```text
+.env
+.env.local
+API keys
+API secrets
+Twilio credentials
+Private phone numbers
+Caller information
+```
+
+Only placeholder values should be present in `.env.example`.
+
+---
+
+# 📦 Backend Setup
+
+```bash
+cd backend
+```
+
+Install dependencies:
+
+```bash
+uv sync
+```
+
+Return to the project root:
+
+```bash
+cd ..
+```
+
+---
+
+# 📦 Frontend Setup
+
+```bash
+cd frontend
+pnpm install
+```
+
+Return to the project root:
+
+```bash
+cd ..
+```
+
+---
+
+# ▶️ Running the Application
+
+## Windows
+
+From the project root:
+
+```powershell
+.\start_app.ps1
+```
+
+## macOS / Linux
+
+```bash
+chmod +x start_app.sh
+./start_app.sh
+```
+
+---
+
+# 🖥️ Running Backend and Frontend Separately
+
+If you prefer to run the services separately:
+
+### Backend
+
+```bash
+cd backend
+
+uv run python src/agent.py dev
+```
+
+### Frontend
+
+Open another terminal:
+
+```bash
+cd frontend
+
+pnpm dev
+```
+
+Then open:
+
+```text
+http://localhost:3000
+```
+
+Allow microphone access and start a conversation with Asha Saathi.
+
+---
+
+# 🧪 Testing the Agent
+
+After starting the application, test the features one by one.
+
+### 1. Basic Conversation
+
+Try:
+
+```text
+Hello, who are you?
+```
+
+### 2. Tool Usage
+
+Try asking:
+
+```text
+Can you find healthcare facilities near Tonk?
+```
+
+### 3. Memory
+
+Test a conversation where the caller provides information and explicitly allows relevant information to be remembered.
+
+Then test the same caller again and verify that the agent can retrieve the stored context.
+
+### 4. Human Escalation
+
+Test a situation that should be passed to human support.
+
+### 5. Specialist Handoff
+
+Test a request that should be handled by the Clinic Specialist.
+
+### 6. Analytics
+
+After a call, check whether the conversation outcome appears in the analytics dashboard.
+
+---
+
+# 🔒 Privacy and Security
+
+This project uses external APIs and voice communication, so protecting credentials and user information is important.
+
+Before making the repository public:
+
+* Remove all real API keys
+* Remove private phone numbers
+* Remove real caller information
+* Avoid committing raw conversation data
+* Keep `.env.local` out of Git
+* Use `.env.example` for configuration templates
+* Blur private information in any public demo
+
+---
+
+# 🧩 Challenges I Faced
+
+The project was not built without problems.
+
+One of the biggest challenges was getting several real-time components to work together:
+
+```text
+Frontend
+   ↓
+LiveKit
+   ↓
+Speech-to-Text
+   ↓
+LLM
+   ↓
+Tools / Memory
+   ↓
+Murf Falcon
+   ↓
+LiveKit
+   ↓
+Frontend
+```
+
+When something failed, it was not always obvious which layer was responsible.
+
+I learned to debug each layer independently instead of treating the entire voice agent as one system.
+
+Another challenge was API configuration. With multiple services involved, a missing or incorrect environment variable could make the entire pipeline appear broken.
+
+The specialist handoff also required more thought than I initially expected. Passing control to another agent is easy; passing enough context for the conversation to continue naturally is the harder part.
+
+---
+
+# 📚 What I Learned
+
+The biggest lesson from the challenge was:
+
+> **A voice agent is much more than STT + LLM + TTS.**
+
+Those components create the basic voice pipeline, but a useful agent needs much more around them.
+
+I learned about:
+
+* Voice pipeline design
+* Real-time communication
+* Prompt and personality design
+* AI guardrails
+* Persistent memory
+* Tool calling
+* External API integration
+* Outbound voice calls
+* Human escalation
+* Call analytics
+* Multi-agent handoffs
+* Debugging real-time AI systems
+
+I started this challenge thinking about:
+
+```text
+"How can I make an AI talk?"
+```
+
+By the end, I was thinking about:
+
+```text
+"How can I build an AI system that can
+listen, understand, remember, act,
+communicate, escalate, and collaborate?"
+```
+
+That change in perspective was probably the most valuable part of the challenge.
+
+---
+
+# 🔮 Future Improvements
+
+There are several things I would like to improve in the next version:
+
+* Better multilingual and code-mixed conversations
+* More specialist agents
+* Improved long-term memory
+* Better conversation evaluation
+* Latency monitoring
+* More detailed analytics
+* Better error recovery
+* Production deployment
+* More real-world integrations
+
+---
+
+# 🔗 Resources
+
+* [Murf AI](https://murf.ai/)
+* [Murf Falcon Documentation](https://murf.ai/api/docs/text-to-speech-models/falcon-2)
+* [LiveKit Voice AI Quickstart](https://docs.livekit.io/agents/start/voice-ai/)
+* [LiveKit Agents Documentation](https://docs.livekit.io/agents/)
+* [Deepgram Documentation](https://developers.deepgram.com/)
+* [Google Gemini API Documentation](https://ai.google.dev/)
+* [Twilio Documentation](https://www.twilio.com/docs)
+* [OpenStreetMap](https://www.openstreetmap.org/)
+
+---
+
+# 🏆 10 Days of Voice Agents — VoiceForBharat Edition
+
+Asha Saathi was built as part of the:
+
+**10 Days of Voice Agents — VoiceForBharat Edition**
+
+Across 10 days, the project evolved from a basic voice conversation into a complete voice-agent system with:
+
+```text
+🎙️ Voice
+   +
+🧠 Memory
+   +
+🛡️ Guardrails
+   +
+🔧 Tools
+   +
+📞 Outbound Calls
+   +
+👩‍💼 Human Escalation
+   +
+📊 Analytics
+   +
+🤝 Specialist Handoff
+```
+
+**Powered by Murf Falcon.**
+
+---
+
+# 👩‍💻 Author
+
+**Kanishka Mathur**
+
+B.Tech — Artificial Intelligence
+
+GitHub:
+[https://github.com/Kanishkaaa08](https://github.com/Kanishkaaa08)
+
+---
+
+# 📄 License
+
+This project is licensed under the MIT License.
+
